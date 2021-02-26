@@ -1,0 +1,121 @@
+# written in Blender 2.91.2
+# for j3-j puzzle cubes by narratorjay, February 2021
+
+import bpy
+import numpy as np
+import os
+import csv
+
+
+# load data for material and movement
+### only sceneArray positions have an array loaded because the only materials are for the tabletop
+os.chdir('/home/jay/anaconda3/j3-j/data')
+sceneArray = np.genfromtxt('cube333spatialMBGrey.csv', encoding = 'utf8', delimiter = ',', names = True, dtype = [('description', '<U12'), ('objectName', '<U12'), ('frameIncrement', '<i8'), ('locX', '<f8'), ('locY', '<f8'), ('locZ', '<f8'), ('spinX', '<f8'), ('spinY', '<f8'), ('spinZ', '<f8'), ('scaleX', '<f8'), ('scaleY', '<f8'), ('scaleZ', '<f8'), ('mmBevel', '<f8')] )
+
+### functions for item creation and movement
+# item & row are global variables
+def createPlaceObject(item, row):
+    # get location, rotation, scale values
+    loc = ( sceneArray[row][sceneDict['locX']], sceneArray[row][sceneDict['locY']], sceneArray[row][sceneDict['locZ']] )  
+    spin = ( sceneArray[row][sceneDict['spinX']], sceneArray[row][sceneDict['spinY']], sceneArray[row][sceneDict['spinZ']] )  
+    size = ( sceneArray[row][sceneDict['scaleX']], sceneArray[row][sceneDict['scaleY']], sceneArray[row][sceneDict['scaleZ']] )  
+    missingItem = False
+    if (item == 'tabletop') or (item[0:5] == 'block'):
+        bpy.ops.mesh.primitive_cube_add(location = loc, rotation = spin, scale = size)
+        if not np.isnan( sceneArray[row][sceneDict['mmBevel']] ):
+            bpy.ops.object.editmode_toggle()
+            bpy.ops.mesh.bevel(offset = sceneArray[row][sceneDict['mmBevel']], offset_pct = 0, affect = 'EDGES')
+            bpy.ops.object.editmode_toggle()
+        assignMaterial(item)
+    elif (item[0:6] == 'sphere'):
+        bpy.ops.mesh.primitive_uv_sphere_add(location = loc, rotation = spin, scale = size)             
+        assignMaterial(item)
+    elif (item[0:4] == 'lamp'):
+        bpy.ops.object.light_add(type = 'POINT', radius = 1, align = 'WORLD', location = loc, scale = size)
+        bpy.context.active_object.name = item
+        bpy.context.active_object.data.name = item
+    elif (item[0:6] == 'camera'):
+        bpy.ops.object.camera_add(enter_editmode = False, align='VIEW', location = loc, rotation = spin, scale = size)
+        bpy.context.active_object.name = item
+        bpy.context.active_object.data.name = item
+        bpy.context.scene.camera = bpy.data.objects['camera']
+    else:
+        print(item, 'not placed in scene')
+        missingItem = True
+    if not missingItem:
+        print('Placed', item, 'in scene with loc values', loc)
+        bpy.context.scene.frame_set(frame) 
+        itemInfo = bpy.data.objects[item]
+        itemInfo.keyframe_insert(data_path = "location",index = -1)        
+        itemInfo.keyframe_insert(data_path = "rotation_euler",index = -1)            
+        itemInfo.keyframe_insert(data_path = "scale",index = -1)        
+            
+def assignMaterial(item):                   # no dictionay loaded because all itmes bar the tabletop have no material setting
+    bpy.context.active_object.name = item
+    bpy.context.active_object.data.name = item
+    matchFound = False
+    if item[0:5] == 'table':
+            print(item, 'uses material with qualities for tablePine and tablePine0')
+            thisMat = bpy.data.materials.new( 'tablePine0' )
+            thisMat.diffuse_color = ( 0.8, 0.511, 0.3, 1 )  # (H, S, V, A colour information) 
+            thisMat.metallic = 0.05
+            thisMat.roughness = 0.4
+            thisMat.specular_intensity = 0.5
+            bpy.context.active_object.data.materials.append(thisMat)
+            matchFound = True
+    if not matchFound:
+        print('No material matched to', item)
+
+def moveMeSpinMeScaleMe(item):
+    bpy.context.scene.frame_set(frame)  # universal frame count
+    print('frame used in moveMeSpinMe...', frame)
+    itemInfo = bpy.data.objects[item]
+    if not np.isnan( sceneArray[row][sceneDict['locX']] ):
+        itemInfo.location = ( sceneArray[row][sceneDict['locX']], sceneArray[row][sceneDict['locY']], sceneArray[row][sceneDict['locZ']] )
+        #print( 'at frame', frame, item, ' has xyz positions:', sceneArray[row][sceneDict['locX']], sceneArray[row][sceneDict['locY']], sceneArray[row][sceneDict['locZ']] )
+        itemInfo.keyframe_insert(data_path = "location", index = -1)    # index =-1 is the last item in a list: this an append instruction
+    if not np.isnan( sceneArray[row][sceneDict['spinY']] ):
+        itemInfo.rotation_euler = ( sceneArray[row][sceneDict['spinX']], sceneArray[row][sceneDict['spinY']], sceneArray[row][sceneDict['spinZ']] )
+        #print( 'at frame', frame, item, ' is at radian angles:', sceneArray[row][sceneDict['spinX']], sceneArray[row][sceneDict['spinY']], sceneArray[row][sceneDict['spinZ']] )
+        itemInfo.keyframe_insert(data_path = "rotation_euler", index = -1)    
+    if not np.isnan( sceneArray[row][sceneDict['scaleZ']] ):
+        itemInfo.scale = ( sceneArray[row][sceneDict['scaleX']], sceneArray[row][sceneDict['scaleY']], sceneArray[row][sceneDict['scaleZ']] )
+        #print( 'at frame', frame, item, ' is scaled to dimensions:', sceneArray[row][sceneDict['scaleX']], sceneArray[row][sceneDict['scaleY']], sceneArray[row][sceneDict['scaleZ']] )
+        itemInfo.keyframe_insert(data_path = "scale", index = -1)
+        
+### create spatial dictionary of column headings for location ,rotation, scale values
+with open('cube333spatialMBGrey.csv') as scenes:      
+    readscenes = csv.reader(scenes)
+    columnTitles = next(readscenes)
+    sceneDict = dict(zip(columnTitles, range(len(columnTitles))))
+    print('Scene dictionary \'sceneDict\' is ', sceneDict)
+    scenes.close()
+
+### begin animation by emptying the set (one error solved by entering   bpy.ops.object.mode_set(mode = 'OBJECT')   in the Scripting workspace's command-line console)
+removeThese = bpy.context.copy()
+removeThese['selected_objects'] = list(bpy.context.scene.objects)  # this is a useful list
+bpy.ops.object.delete(removeThese)
+bpy.ops.object.empty_add(type = 'PLAIN_AXES', location = (0, 0, 0))
+
+# initialise variables to read sceneArray and modify scene
+bpy.context.scene.frame_set(1)
+frame, row, finalRow = 1, 0, len(sceneArray) - 1
+
+# set scene
+while frame == 1:                                           
+    item = sceneArray[row][sceneDict['objectName']]
+    createPlaceObject(item, row)
+    print( 'row, frame, frameStep values:', row, frame, sceneArray[row][sceneDict['frameStep']] )
+    row += 1    
+    frame += sceneArray[row][sceneDict['frameStep']]    
+
+# animate
+while row <= finalRow:                                      
+    moveMeSpinMeScaleMe( sceneArray[row] [sceneDict['objectName']] )    
+    print( 'row, frame, item values:', row, frame, sceneArray[row] [sceneDict['objectName']] )
+    row += 1    
+    if not row > finalRow:
+        frame += sceneArray[row][sceneDict['frameStep']]    # skip this when there are no more frames
+
+row -= 1                                                    # row count is one less because of the header row of column titles
+print( 'Last recorded row, frame, item values:', row, frame, sceneArray[row] [sceneDict['objectName']] )

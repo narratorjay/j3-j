@@ -5,6 +5,6 @@ The mathematics behind the symmetry is beautiful!  The 'j-cubed minus j' express
 
 Then discover (or maybe calculate) attractive ways to form and animate blocks to fill the space surrounding unit spheres occupying the long diagonal (top back left corner to bottom front right) within each cube.
 
-![Boxed 7.7.7 puzzle 'Maturity'](777BoxedFlowersMaturity.jpg)
+![Boxed 777 puzzle Maturity](777BoxedFlowersMaturityTrimmed.png)
 
 Coded in Blender 2.91.2.

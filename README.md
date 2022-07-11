@@ -7,4 +7,4 @@ Then discover (or maybe calculate) attractive ways to form and animate blocks to
 
 ![Boxed 777 puzzle Maturity](https://raw.githubusercontent.com/narratorjay/j3-j/main/777real333virtual.PNG)
 
-Coded in Blender 2.91.2.
+Coded in Blender, first in 2.91.2 and then 3.2.0, I think the dimensions of spheres are expressed differently.

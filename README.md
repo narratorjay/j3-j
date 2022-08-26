@@ -8,4 +8,4 @@ The next steps are to discover and calculate ways to form and then animate block
 
 ![Boxed 777 puzzle Maturity](https://raw.githubusercontent.com/narratorjay/j3-j/main/777real333virtual.PNG)
 
-Coded in Blender 3.2.0.
+Coded in Blender 3.2.2.

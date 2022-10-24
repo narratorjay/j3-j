@@ -1,37 +1,220 @@
 import bpy
-
+import bmesh
+import numpy as np
+import os
+import csv
+import math
 
 '''
-This code is backed up on GitHub using lunar.txt,
+This code is backed up on GitHub using lunar.txt, 
 do not try to save .blend files there
 
-Removed nine items (cylinders,blocks and an icosphere)
+Removed nine items (cylinders,blocks and an icosphere) 
 comprising a lunar base in the original landscape from TurboSquid
 with this code:
-
+ 
 BaseBuildings = bpy.data.collections.get('base')
-
+ 
 for Building in BaseBuildings.objects:
     bpy.data.objects.remove(Building, do_unlink=True)
-
+    
 bpy.data.collections.remove(BaseBuildings)
 
 
 # clear scene of previous blocks was
 bpy.ops.object.select_all(action = 'DESELECT')
-bpy.data.objects['B-321a'].select_set(True)
+bpy.data.objects['B321a'].select_set(True)
 bpy.ops.object.delete() '''
 
-# clear scene of previous blocks
+def AssignNameMaterial(Stub):   # Stub is of the form B321 etc or S111
+    MatchingStub = False
+    MatchingList = []
+    MatchingMaterial = False
+    for item in bpy.context.scene.objects:
+        if item.name[:4] == Stub:
+            MatchingStub = True
+            MatchingList.append(item.name)
+                            
+        if MatchingStub:
+            LastLetterOfLastMatch = MatchingList[-1:][-1][-1]  # last list item, last item, last letter 
+            AlphabetPosition = SuffixList.index(LastLetterOfLastMatch)
+            NextSuffix = SuffixList[AlphabetPosition + 1]
+            NewName = Stub + NextSuffix
+        else:
+            NewName = Stub + 'a'
+                
+    print('NewName value from AssignNameMaterial function:', NewName)
+    bpy.context.active_object.name = NewName
+    bpy.context.active_object.data.name = NewName     # check everything is there with >>>list(bpy.context.scene.objects)
+    
+    if NewName[0] == 'S':
+        bpy.data.objects[NewName].active_material = SphereSteel
+        print('Item', NewName, 'has material', bpy.data.objects[NewName].active_material)
+    elif NewName[0] == 'B':
+        bpy.data.objects[NewName].active_material = acrylicBpyMat
+        print('Item', NewName, 'has material', bpy.data.objects[NewName].active_material)
+        # add a bevel on the block vertices later
+    else:
+        print('No material found for item', NewName)
+            
+    return(NewName)
+
+
+def RotateBlocksAboutSpheres(BCoords, BDims, NameRootAppend):
+    print('fn RotateBlocksAboutSpheres BCoords, BDims, NameRootAppend:  ', BCoords, BDims, NameRootAppend)
+    bpy.ops.mesh.primitive_cube_add(location = (BCoords[0], BCoords[1], BCoords[2]), rotation = (0, 0, 0), scale = (BDims))
+    FullBlockName = AssignNameMaterial(NameRootAppend)
+    bpy.ops.mesh.primitive_cube_add(location = (BCoords[1], BCoords[2], BCoords[0]), rotation = (0, Pi/2, Pi/2), scale = (BDims))
+    FullBlockName = AssignNameMaterial(NameRootAppend)
+    bpy.ops.mesh.primitive_cube_add(location = (BCoords[2], BCoords[0], BCoords[1]), rotation = (Pi/2, 0, Pi/2), scale = (BDims))
+    FullBlockName = AssignNameMaterial(NameRootAppend)
+    bpy.ops.mesh.primitive_cube_add(location = (CubeD-BCoords[0], CubeD-BCoords[1], CubeD-BCoords[2]), rotation = (0, 0, 0), scale = (BDims))
+    FullBlockName = AssignNameMaterial(NameRootAppend)
+    bpy.ops.mesh.primitive_cube_add(location = (CubeD-BCoords[1], CubeD-BCoords[2], CubeD-BCoords[0]), rotation = (0, Pi/2, Pi/2), scale = (BDims))
+    FullBlockName = AssignNameMaterial(NameRootAppend)
+    bpy.ops.mesh.primitive_cube_add(location = (CubeD-BCoords[2], CubeD-BCoords[0], CubeD-BCoords[1]), rotation = (Pi/2, 0, Pi/2), scale = (BDims))
+    FullBlockName = AssignNameMaterial(NameRootAppend)
+    print('used RotateBlocksAboutSpheres with matrix size', mD)
+    # link the rotations here with the matrix:  (0, Pi/2, Pi/2) for 'b' <->   np.rot90(..., axes = (0, 2)); np.rot90(..., axes = (1, 0))
+    # (Pi/2, 0, Pi/2) for 'c' <-> np.rot90(..., axes = (0, 1)); np.rot90(..., axes = (2, 0)) in fn RotateReflectMatrix
+    # and BDims aka NewBlockXYZ 
+
+
+def CheckEmptiesForBlock(CornerCell):
+    print('CornerCell occupies matrix position:',  CornerCell)
+    EmptySpace = True
+    StillChecking = True
+    
+    while EmptySpace and StillChecking:
+        for CellX in range(CornerCell[0], CornerCell[0] + MBlockXYZ[0], 1):   # syntax is  range(FromValue, ToValue, StepSize)
+            for CellY in range(CornerCell[1], CornerCell[1] + MBlockXYZ[1], 1):
+                for CellZ in range(CornerCell[2], CornerCell[2] + MBlockXYZ[2], 1):
+                    print('EmptySpace: ', EmptySpace, '   cell (x, y, z): ', CellX, CellY, CellZ)
+                    print('Matrix3D[CellX][CellY][CellZ] holds: ', Matrix3D[CellX][CellY][CellZ])
+                    if Matrix3D[CellX][CellY][CellZ] != '.':
+                        EmptySpace = False
+                    else:
+                        Matrix3D[CellX][CellY][CellZ] = EachBlock + 'a'
+                        # EmptySpace = True
+
+        print('3D \'for\' loops in matrix finished')
+        StillChecking = False
+        # call fn to fill in cells with 'B-321' suffix 'b', 'c' etc on a different 3D matrix
+        # see if matrices can be added, updating Matrix3D as we go
+                 
+    print('EmptySpace is', str(EmptySpace), ', StillChecking is', str(StillChecking), 'after checking block\'s cells.')
+    BlockCofMList = [ CornerCell[0] + MBlockXYZ[0]/2, CornerCell[1] + MBlockXYZ[1]/2, CornerCell[2] + MBlockXYZ[2]/2 ]
+    print('CornerCell XYZ positions:',  CornerCell)
+    NewBlockXYZ = [MBlockXYZ[0]*0.01, MBlockXYZ[1]*0.01, MBlockXYZ[2]*0.01]
+    print('NewBlockXYZ C of M position:', BlockCofMList)
+    return(EmptySpace, BlockCofMList, NewBlockXYZ)
+
+
+def RotateReflectMatrix(MatrixA):
+    for shape in BlockNames:
+        semiMatrixB = np.rot90(MatrixA, axes = (0, 2))   # rotates B321a (flat along x-axis) to B321b (vertical, z)
+        MatrixB = np.rot90(semiMatrixB, axes = (1, 0))
+        for mx in range(mD):
+            for my in range(mD):
+                for mz in range(mD):
+                    if MatrixB[mx][my][mz][0:4] == shape:
+                        MatrixB[mx][my][mz] = shape + 'b'
+                         
+        semiMatrixC = np.rot90(MatrixA, axes = (0, 1))   # rotates B321a (as above) to B321c (set on edge, aligned along y)
+        MatrixC = np.rot90(semiMatrixC, axes = (2, 0))
+        for mx in range(mD):
+            for my in range(mD):
+                for mz in range(mD):
+                    if MatrixC[mx][my][mz][0:4] == shape:
+                        MatrixC[mx][my][mz] = shape + 'c'
+    
+    FinalMatrix = FormerMatrix
+    rD = mD - 1       # range dimension, rD, is one less than mD, matrix dimension
+    for mx in range(mD):
+        for my in range(mD):
+            for mz in range(mD):
+                if FormerMatrix[mx][my][mz][:1] == 'S':
+                    FinalMatrix[mx][my][mz] = FormerMatrix[mx][my][mz]
+                if MatrixA[mx][my][mz][:4] in BlockNames:
+                    FinalMatrix[mx][my][mz] = MatrixA[mx][my][mz]
+                    FinalMatrix[rD - mx][rD - my][rD - mz] = MatrixA[mx][my][mz][:5] + 'd'
+                if MatrixB[mx][my][mz][:4] in BlockNames:
+                    FinalMatrix[mx][my][mz] = MatrixB[mx][my][mz]
+                    FinalMatrix[rD - mx][rD - my][rD - mz] = MatrixB[mx][my][mz][:5] + 'e'
+                if MatrixC[mx][my][mz][:4] in BlockNames:
+                    FinalMatrix[mx][my][mz] = MatrixC[mx][my][mz]
+                    FinalMatrix[rD - mx][rD - my][rD - mz] = MatrixC[mx][my][mz][:5] + 'f'                    
+    print('FinalMatrix is', FinalMatrix)
+
+
+def AlignCamLights(NewPosAngle, FrameCount, Tracking, TrackTarget):
+    scene.frame_set(FrameCount)
+    print('NewPosAngle components are', NewPosAngle, 'FrameCount', FrameCount)
+    
+    ItemInfo = bpy.data.objects['camera']
+    ItemInfo.location = ( NewPosAngle[0][0], NewPosAngle[0][1], NewPosAngle[0][2] )
+    
+    print('NewPosAngle[1] holds values', NewPosAngle[1])
+    
+
+    if Tracking:
+        TrackingConstraint = ItemInfo.constraints.new('TRACK_TO')
+        TrackingConstraint.target = bpy.data.objects[TrackTarget]
+        print('camera ItemInfo location and not rotation:', ItemInfo.location)
+        ItemInfo.keyframe_insert(data_path = "location",index = -1)
+    else:
+        ItemInfo.rotation_euler = ( [NewPosAngle[1][0], NewPosAngle[1][1], NewPosAngle[1][2]] )    
+        ItemInfo.keyframe_insert(data_path = "location",index = -1)
+        ItemInfo.keyframe_insert(data_path = "rotation_euler",index = -1)
+        print('Not tracking, camera .rotation_euler values:', ItemInfo.rotation_euler)
+        
+        ItemInfo = bpy.data.objects['LeftLamp']
+        ItemInfo.location = ( [NewPosAngle[0][0] - 2*math.cos(NewPosAngle[1][2]), NewPosAngle[0][1] - 2*math.sin(NewPosAngle[1][2]), NewPosAngle[0][2]] )
+        ItemInfo.keyframe_insert(data_path = "location",index = -1)    
+        
+        ItemInfo = bpy.data.objects['RightLamp']
+        ItemInfo.location = ( [NewPosAngle[0][0] + 2*math.cos(NewPosAngle[1][2]), NewPosAngle[0][1] + 2*math.sin(NewPosAngle[1][2]), NewPosAngle[0][2]] )
+        ItemInfo.keyframe_insert(data_path = "location",index = -1)
+        
+        ItemInfo = bpy.data.objects['TopLamp']
+        ShortZ = 0.7 * math.sqrt( (math.sin(NewPosAngle[1][0] - Pi/2)) * (math.sin(NewPosAngle[1][0] - Pi/2)) )   # really could have done this with independent axes for scout  
+        ItemInfo.location = ( NewPosAngle[0][0] + ShortZ, NewPosAngle[0][1] + ShortZ, 0.7 - ShortZ )
+        ItemInfo.keyframe_insert(data_path = "location",index = -1)
+    
+    # put an  if statement here remove tracking so that re-runs start without tracking
+    # TrackingConstraint = ItemInfo.constraints.new('TRACK_TO')
+    if Tracking:
+        ItemInfo = bpy.data.objects['camera']
+        ItemInfo.constraints.remove(TrackingConstraint)
+    
+### functions end, set scene
+
+# set light ray behaviour, prepare names and matrix, set scene, define materials including temporary tabletop    
+# increase light ray bounces for transparent acrylic
+scene = bpy.context.scene
+scene.render.engine = 'CYCLES'
+scene.cycles.transparent_max_bounces = 20
+scene.cycles.transmission_max_bounces = 20
+scene.cycles.diffusion_bounces = 20
+scene.cycles.volume_bounces = 8
+
 AllObjects = bpy.data.objects
-AllObjects.remove(AllObjects['B-321a'])
-AllObjects.remove(AllObjects['LowCamera'])
+AllObjects.remove(AllObjects['LowCamera'])  # needed, check another way to remove unwanted objects from scene.
 
+# define components and names
+Pi = math.pi
+SuffixList = ['a', 'b', 'c', 'd', 'e', 'f']
+BlockNames = ['B321']; BaseSphereName = 'S111'  # was BlockNames = ['B321', 'B221']   # the dimensions in decreasing order
 
+BScale = 10
+mx = 0;  my = 0;  mz = 0; mD = 4         # prefix m for matrix which is later scaled *0.02, the diameter of a sphere & length of a cube
+CubeD = mD * BScale
+Matrix3D = [[['.' for mx in range(mD)] for my in range(mD)] for mz in range(mD)]
+print('mx, my, mz, mD values: ', mx, my, mz, mD)
 
 # now get adding blocks with simple motion
-EachBlock = 'B-321';  BScale = 10
-MBlockXYZ = [ int(EachBlock[2:3]), int(EachBlock[3:4]), int(EachBlock[4:5]) ]
+EachBlock = 'B321'
+MBlockXYZ = [ int(EachBlock[1:2]), int(EachBlock[2:3]), int(EachBlock[3:4]) ]
 NewBlockXYZ = [MBlockXYZ[0]*BScale, MBlockXYZ[1]*BScale, MBlockXYZ[2]*BScale]
 BDims = NewBlockXYZ
 BCoords = [0, 0, 30]
@@ -40,35 +223,43 @@ Stub = EachBlock
 bpy.context.active_object.name = Stub + 'a'
 bpy.context.active_object.data.name = Stub + 'a'
 
-# material
-bpy.context.active_object.name = 'B-321a'
-bpy.context.active_object.data.name = 'B-321a'
+# define materials:  steel then acrylic
+bpy.data.materials.new('steel')
+SphereSteel = bpy.data.materials['steel']
+SphereSteel.use_nodes = True
+SphereSteel.node_tree.nodes['Principled BSDF'].inputs[0].default_value = (0.262, 0.262, 0.262, 1)    # base colour HSVA
+SphereSteel.node_tree.nodes['Principled BSDF'].inputs[3].default_value = (0.457, 0.457, 0.457, 1)    # base colour subsurface
+SphereSteel.node_tree.nodes['Principled BSDF'].inputs[4].default_value = 0.96    # metallic
+SphereSteel.node_tree.nodes['Principled BSDF'].inputs[7].default_value = 0.05   # roughness 
+
+# move these two lines elsewhere
+bpy.context.active_object.name = 'B321a'
+bpy.context.active_object.data.name = 'B321a'
+
 
 bpy.data.materials.new('acrylic')
 acrylicBpyMat = bpy.data.materials['acrylic']
 acrylicBpyMat.use_nodes = True
-bpy.data.objects['B-321a'].active_material = acrylicBpyMat
+
+# move this line elsewhere bpy.data.objects['B321a'].active_material = acrylicBpyMat        
 
 acrylicNodes = acrylicBpyMat.node_tree.nodes
 acrylicRefraction = acrylicNodes.new( type = 'ShaderNodeBsdfRefraction' )
 acrylicGlass = acrylicNodes.new( type = 'ShaderNodeBsdfGlass' )
-acrylicGlass.inputs[1].default_value = 0.0
-
-mixShader = acrylicNodes.new( type = 'ShaderNodeMixShader' )
+acrylicGlass.inputs[1].default_value = 0.0        
+mixShader = acrylicNodes.new( type = 'ShaderNodeMixShader' )        
 acrylicOutput = acrylicNodes.new( type = 'ShaderNodeOutputMaterial' )
-
 acrylicShaderLinks = acrylicBpyMat.node_tree.links
 link = acrylicShaderLinks.new( acrylicRefraction.outputs[0], mixShader.inputs[1] )
 link = acrylicShaderLinks.new( acrylicGlass.outputs[0], mixShader.inputs[2] )
 link = acrylicShaderLinks.new( mixShader.outputs[0], acrylicOutput.inputs[0] )
-
 input = acrylicNodes['Material Output'].inputs['Surface']
 output = acrylicNodes['Glass BSDF'].outputs['BSDF']
 acrylicShaderLinks.new(input, output)
 
 
 # camera
-bpy.ops.object.camera_add(enter_editmode = False, align='VIEW', location = (130, -130, 80), rotation = (1.5, 0, 0.8), scale = (1, 1, 1))
+bpy.ops.object.camera_add(enter_editmode = False, align='VIEW', location = (140, -140, 90), rotation = (1.5, 0, 0.8), scale = (1, 1, 1))
 bpy.context.active_object.name = 'LowCamera'
 bpy.context.active_object.data.name = 'LowCamera'
 bpy.context.scene.camera = bpy.data.objects['LowCamera']
@@ -79,14 +270,14 @@ bpy.context.scene.camera = bpy.data.objects['LowCamera']
 Frame = 1
 
 # the keyframe line is what was missing before
-ItemName = 'B-321a'
+ItemName = 'B321a'
 ItemInfo = bpy.data.objects[ItemName]
 bpy.context.scene.frame_set(Frame)
 ItemInfo.keyframe_insert(data_path = "location",index = -1)
 print('ItemInfo before move:', ItemInfo.location)
 
 
-Frame = 25
+Frame = 120
 
 #ItemInfo = bpy.data.objects(ItemName)
 bpy.context.scene.frame_set(Frame)
@@ -97,7 +288,7 @@ print('ItemInfo after move:', ItemInfo.location)
 
 
 
-# specify transparent material properties
+
 # film from exploratory drone
 # glitch
 # film drone filming glitching blocks

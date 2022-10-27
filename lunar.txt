@@ -53,7 +53,7 @@ def AssignNameMaterial(Stub):   # Stub is of the form B321 etc or S111
     elif NewName[0] == 'B':
         bpy.data.objects[NewName].active_material = acrylicBpyMat
         print('Item', NewName, 'has material', bpy.data.objects[NewName].active_material)
-        # add a bevel on the block vertices later
+        # add a bevel on the block vertices later, or not
     else:
         print('No material found for item', NewName)
             
@@ -186,7 +186,7 @@ def AlignCamLights(NewPosAngle, FrameCount, Tracking, TrackTarget):
     if Tracking:
         ItemInfo = bpy.data.objects['camera']
         ItemInfo.constraints.remove(TrackingConstraint)
-    
+        
 ### functions end, set scene
 
 # set light ray behaviour, prepare names and matrix, set scene, define materials including temporary tabletop    
@@ -198,13 +198,25 @@ scene.cycles.transmission_max_bounces = 20
 scene.cycles.diffusion_bounces = 20
 scene.cycles.volume_bounces = 8
 
-AllObjects = bpy.data.objects
-AllObjects.remove(AllObjects['LowCamera'])  # needed, check another way to remove unwanted objects from scene.
+
 
 # define components and names
 Pi = math.pi
 SuffixList = ['a', 'b', 'c', 'd', 'e', 'f']
-BlockNames = ['B321']; BaseSphereName = 'S111'  # was BlockNames = ['B321', 'B221']   # the dimensions in decreasing order
+BlockNames = ['B321']; BaseSphereName = ['S111']
+AddedCam = ['LowCamera']
+ActiveItems = BlockNames + BaseSphereName + AddedCam
+ 
+# clear scene of script item debris 
+for o in bpy.data.objects:
+    print('Object:', o)
+    for i in ActiveItems:
+        if o.name[:4] == i[:4]:
+            print('Deleting', o.name)
+            o.user_clear
+            bpy.data.objects.remove(o)
+    
+
 
 BScale = 10
 mx = 0;  my = 0;  mz = 0; mD = 4         # prefix m for matrix which is later scaled *0.02, the diameter of a sphere & length of a cube

@@ -9,6 +9,8 @@ import math
 This code is backed up on GitHub using lunar.txt, 
 do not try to save .blend files there
 
+git fell off main in October 2022 hopefully added back, this line is to test
+
 Removed nine items (cylinders,blocks and an icosphere) 
 comprising a lunar base in the original landscape from TurboSquid
 with this code:

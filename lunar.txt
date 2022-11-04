@@ -5,36 +5,6 @@ import os
 import csv
 import math
 
-'''
-This code is backed up on GitHub using lunar.txt, 
-do not try to save .blend files there
-
-git fell off main in October 2022 hopefully added back, this line is to test
-
-Removed nine items (cylinders,blocks and an icosphere) 
-comprising a lunar base in the original landscape from TurboSquid
-with this code:
- 
-BaseBuildings = bpy.data.collections.get('base')
- 
-for Building in BaseBuildings.objects:
-    bpy.data.objects.remove(Building, do_unlink=True)
-    
-bpy.data.collections.remove(BaseBuildings)
-
-
-# clear scene of previous blocks was
-bpy.ops.object.select_all(action = 'DESELECT')
-bpy.data.objects['B321a'].select_set(True)
-bpy.ops.object.delete() '''
-
-import bpy
-import bmesh
-import numpy as np
-import os
-import csv
-import math
-
 
 ''' This code is backed up on GitHub using lunar.txt, 
 do not try to save .blend files there
@@ -48,54 +18,11 @@ for Building in BaseBuildings.objects:
     bpy.data.objects.remove(Building, do_unlink=True)
 bpy.data.collections.remove(BaseBuildings) '''
 
-# functions
-def AssignNameMaterial(Stub):   # Stub is of the form B321 etc or S111
+
+def ObjectCreateNameGlitchMaterial(Stub, Centre, Spin, Dims):
     MatchingStub = False
     MatchingList = []
-    MatchingMaterial = False
-
-    for item in bpy.context.scene.objects:
-        if item.name[:4] == Stub:
-            MatchingStub = True
-            MatchingList.append(item.name)
-        if MatchingStub:
-            LastLetterOfLastMatch = MatchingList[-1:][-1][-1]  # last list item, last item, last letter 
-            AlphabetPosition = SuffixList.index(LastLetterOfLastMatch)
-            NextSuffix = SuffixList[AlphabetPosition + 1]
-            NewName = Stub + NextSuffix
-        else:
-            NewName = Stub + 'a'
-            
-                
-    print('NewName value from AssignNameMaterial function:', NewName)
-    bpy.context.active_object.name = NewName
-    bpy.context.active_object.data.name = NewName     # check everything is there with >>>list(bpy.context.scene.objects)
-    
-    if NewName[0] == 'S':
-        bpy.data.objects[NewName].active_material = SphereSteel
-        print('Item', NewName, 'has material', bpy.data.objects[NewName].active_material)
-    elif NewName[0] == 'B':
-        bpy.data.objects[NewName].active_material = acrylicBpyMat
-        print('Item', NewName, 'has material', bpy.data.objects[NewName].active_material)
-        # add a bevel on the block vertices later, or not
-    else:
-        print('No material found for item', NewName)
-    
-    '''    
-    # add five glitching acrylic spheres or blocks
-    for s in len(GlitchSuffixes):
-        if NewName[0] == 'B':
-            bpy.ops.mesh.primitive_cube_add(location = (BCoords[0] * Offsets[(s+0)%5], BCoords[1] * Offsets[(s+2)%5], BCoords[2] * Offsets[(s+2)%5]), rotation = (0, 0, 0), scale = (BDims))
-            NewNameGlitched = NewName + GlitchSuffixes[s]
-            bpy.context.active_object.name = NewNameGlitched
-            bpy.context.active_object.data.name = NewNameGlitched
-    '''
-
-    return(NewName)
-
-def CreateNameGlitchMaterial(Stub, Centre, Spin, Dims):
-    MatchingStub = False
-    MatchingList = []
+    StubGroup = []
     
     for item in bpy.context.scene.objects:
         if item.name[:4] == Stub:
@@ -112,7 +39,6 @@ def CreateNameGlitchMaterial(Stub, Centre, Spin, Dims):
     if Stub[:1] == 'B':
         for g in range(len(GlitchSuffixes)):
             GlitchNewName = NewName + GlitchSuffixes[g]
-            
             for c in range(len(Centre)):
                 Centre[c] = Centre[c] + Offsets[g]
                 Spin[c] = Spin[c] + Offsets[g]
@@ -121,6 +47,7 @@ def CreateNameGlitchMaterial(Stub, Centre, Spin, Dims):
             bpy.ops.mesh.primitive_cube_add( location = (Centre[0], Centre[1], Centre[2]), rotation = (Spin[0], Spin[1], Spin[2]), scale = (Dims[0], Dims[1], Dims[2]) )
             bpy.context.active_object.name = GlitchNewName
             bpy.context.active_object.data.name = GlitchNewName
+            StubGroup += [GlitchNewName]
             bpy.data.objects[GlitchNewName].active_material = acrylicBpyMat
     
     if Stub[:1] == 'S':
@@ -131,46 +58,16 @@ def CreateNameGlitchMaterial(Stub, Centre, Spin, Dims):
                 Dims[c] = Dims[c] + Offsets[g]
                 
             bpy.ops.mesh.primitive_uv_sphere_add(segments = 128, ring_count = 64, radius = 0.01 + Dims[0], location = (Centre[0], Centre[1], Centre[2]) )    
-                
+            bpy.context.active_object.name = GlitchNewName
+            bpy.context.active_object.data.name = GlitchNewName
+            StubGroup += [GlitchNewName]
             if GlitchNewName[5:] == 'v':
                 bpy.data.objects[GlitchNewName].active_material = SphereSteel
             else:
                 bpy.data.objects[GlitchNewName].active_material = acrylicBpyMat  
                 # glitched spheres are acrylic
-            
-            
-'''
-def AssignName(Stub):
-    MatchingStub = False
-    MatchingList = []
-
-    for item in bpy.context.scene.objects:
-        if item.name[:4] == Stub:
-            MatchingStub = True
-            MatchingList.append(item.name)
-        if MatchingStub:
-            LastLetterUsed = MatchingList[-1:][-1][-1]  # last list item, last item, last letter
-            AlphabetPosition = SuffixList.index(LastLetterUsed)
-            NextSuffix = SuffixList[AlphabetPosition + 1]
-            NewName = Stub + NextSuffix
-        else:
-            NewName = Stub + 'a'
-    
-    bpy.context.active_object.name = NewName
-    bpy.context.active_object.data.name = NewName
-    print('NewName value from AssignName function:', NewName)
-    CreateGlitchVersions(NewName)
-    
-def CreateGlitchVersions(FirstInstance):
-    if len(FirstInstance) == 5:
-        for rank, suffix in GlitchSuffixes:
-            if suffix == 'v':
-                bpy.context.active_object.name = FirstInstance + suffix
-            else:
-                print('else')
-                #bpy.ops.mesh.primitive_cube_add(location = (BCoords[0] * Offsets[rank], BCoords[1] * Offsets[rank], BCoords[2] * Offsets[rank]), rotation = (0 + (1 - Offsets[rank]), 0 + (1 - Offsets[rank]), 0 +  (1 - Offsets[rank])), scale = (BScale[0] * (1 - Offsets[rank]), (BScale[1] *  (1 - Offsets[rank]) ), (BScale[2] *  (1 - Offsets[rank]) ))
-                ### too long to read easily,hard to understand
-'''
+                
+    return(StubGroup)
 
 
 def RotateBlocksAboutSpheres(BCoords, BDims, NameRootAppend):
@@ -302,6 +199,33 @@ def AlignCamLights(NewPosAngle, FrameCount, Tracking, TrackTarget):
 ### functions end, set scene
 
 # set light ray behaviour, prepare names and matrix, set scene, define materials including temporary tabletop    
+
+# define materials:  steel then acrylic
+bpy.data.materials.new('steel')
+SphereSteel = bpy.data.materials['steel']
+SphereSteel.use_nodes = True
+SphereSteel.node_tree.nodes['Principled BSDF'].inputs[0].default_value = (0.262, 0.262, 0.262, 1)    # base colour HSVA
+SphereSteel.node_tree.nodes['Principled BSDF'].inputs[3].default_value = (0.457, 0.457, 0.457, 1)    # base colour subsurface
+SphereSteel.node_tree.nodes['Principled BSDF'].inputs[4].default_value = 0.96    # metallic
+SphereSteel.node_tree.nodes['Principled BSDF'].inputs[7].default_value = 0.05   # roughness 
+
+bpy.data.materials.new('acrylic')
+acrylicBpyMat = bpy.data.materials['acrylic']
+acrylicBpyMat.use_nodes = True
+acrylicNodes = acrylicBpyMat.node_tree.nodes
+acrylicRefraction = acrylicNodes.new( type = 'ShaderNodeBsdfRefraction' )
+acrylicGlass = acrylicNodes.new( type = 'ShaderNodeBsdfGlass' )
+acrylicGlass.inputs[1].default_value = 0.0        
+mixShader = acrylicNodes.new( type = 'ShaderNodeMixShader' )        
+acrylicOutput = acrylicNodes.new( type = 'ShaderNodeOutputMaterial' )
+acrylicShaderLinks = acrylicBpyMat.node_tree.links
+link = acrylicShaderLinks.new( acrylicRefraction.outputs[0], mixShader.inputs[1] )
+link = acrylicShaderLinks.new( acrylicGlass.outputs[0], mixShader.inputs[2] )
+link = acrylicShaderLinks.new( mixShader.outputs[0], acrylicOutput.inputs[0] )
+input = acrylicNodes['Material Output'].inputs['Surface']
+output = acrylicNodes['Glass BSDF'].outputs['BSDF']
+acrylicShaderLinks.new(input, output)
+
 # increase light ray bounces for transparent acrylic
 scene = bpy.context.scene
 scene.render.engine = 'CYCLES'
@@ -309,7 +233,6 @@ scene.cycles.transparent_max_bounces = 20
 scene.cycles.transmission_max_bounces = 20
 scene.cycles.diffusion_bounces = 20
 scene.cycles.volume_bounces = 8
-
 
 # define names of components, create matrix
 Pi = math.pi
@@ -336,7 +259,12 @@ for o in bpy.data.objects:
             print(e)
 
 
-# now get adding blocks with simple motion
+# ObjectCreateNameGlitchMaterial(Stub, Centre, Spin, Dims)
+DimsFromBlockName = [ BScale*int(BlockNames[0][1:2]), BScale*int(BlockNames[0][2:3]), BScale*int(BlockNames[0][3:4]) ]
+ObjectCreateNameGlitchMaterial(BlockNames[0], [0, 0, 40], [0, 0, 0], DimsFromBlockName)
+
+
+''' # now get adding blocks with simple motion
 for EachBlock in BlockNames:
     MBlockXYZ = [ int(EachBlock[1:2]), int(EachBlock[2:3]), int(EachBlock[3:4]) ]
     NewBlockXYZ = [MBlockXYZ[0]*BScale, MBlockXYZ[1]*BScale, MBlockXYZ[2]*BScale]
@@ -344,50 +272,20 @@ for EachBlock in BlockNames:
     BCoords = [0, 0, 40]
     bpy.ops.mesh.primitive_cube_add(location = (BCoords[0], BCoords[1], BCoords[2]), rotation = (0, 0, 0), scale = (BDims))
     Stub = EachBlock[0]
+
 ### replace the above loop by calling 
 # functions
 # AssignName
 # CreateGlitchVersions
 # AssignMaterial
 
-# define materials:  steel then acrylic
-bpy.data.materials.new('steel')
-SphereSteel = bpy.data.materials['steel']
-SphereSteel.use_nodes = True
-SphereSteel.node_tree.nodes['Principled BSDF'].inputs[0].default_value = (0.262, 0.262, 0.262, 1)    # base colour HSVA
-SphereSteel.node_tree.nodes['Principled BSDF'].inputs[3].default_value = (0.457, 0.457, 0.457, 1)    # base colour subsurface
-SphereSteel.node_tree.nodes['Principled BSDF'].inputs[4].default_value = 0.96    # metallic
-SphereSteel.node_tree.nodes['Principled BSDF'].inputs[7].default_value = 0.05   # roughness 
-
-
-bpy.data.materials.new('acrylic')
-acrylicBpyMat = bpy.data.materials['acrylic']
-acrylicBpyMat.use_nodes = True
-
-# move this line elsewhere bpy.data.objects['B321a'].active_material = acrylicBpyMat        
-
-acrylicNodes = acrylicBpyMat.node_tree.nodes
-acrylicRefraction = acrylicNodes.new( type = 'ShaderNodeBsdfRefraction' )
-acrylicGlass = acrylicNodes.new( type = 'ShaderNodeBsdfGlass' )
-acrylicGlass.inputs[1].default_value = 0.0        
-mixShader = acrylicNodes.new( type = 'ShaderNodeMixShader' )        
-acrylicOutput = acrylicNodes.new( type = 'ShaderNodeOutputMaterial' )
-acrylicShaderLinks = acrylicBpyMat.node_tree.links
-link = acrylicShaderLinks.new( acrylicRefraction.outputs[0], mixShader.inputs[1] )
-link = acrylicShaderLinks.new( acrylicGlass.outputs[0], mixShader.inputs[2] )
-link = acrylicShaderLinks.new( mixShader.outputs[0], acrylicOutput.inputs[0] )
-input = acrylicNodes['Material Output'].inputs['Surface']
-output = acrylicNodes['Glass BSDF'].outputs['BSDF']
-acrylicShaderLinks.new(input, output)
-
-for BlockType in EachBlock:
-    AssignNameMaterial(BlockType)
-
 bpy.context.active_object.name = Stub + 'a'
 bpy.context.active_object.data.name = Stub + 'a'
 # move these two lines elsewhere
 bpy.context.active_object.name = 'B321a'
-bpy.context.active_object.data.name = 'B321a'
+bpy.context.active_object.data.name = 'B321a' '''
+
+
 
 # camera
 bpy.ops.object.camera_add(enter_editmode = False, align='VIEW', location = (140, -140, 90), rotation = (1.5, 0, 0.8), scale = (1, 1, 1))
@@ -401,7 +299,7 @@ bpy.context.scene.camera = bpy.data.objects['LowCamera']
 Frame = 1
 
 # the keyframe line is what was missing before
-ItemName = 'B321a'
+ItemName = 'B321av'
 ItemInfo = bpy.data.objects[ItemName]
 bpy.context.scene.frame_set(Frame)
 ItemInfo.keyframe_insert(data_path = "location",index = -1)

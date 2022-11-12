@@ -18,11 +18,57 @@ for Building in BaseBuildings.objects:
     bpy.data.objects.remove(Building, do_unlink=True)
 bpy.data.collections.remove(BaseBuildings) '''
 
+# create glitch object collection dictionary
+def AddGlitchVersions(form, ShapeSuffixes):
+    print('form:', form, '  ShapeSuffixes:', ShapeSuffixes)
+    for group in ShapeSuffixes:
+        GlitchGroup = form + group
+        GlitchGroupName = GlitchGroup + 'Group'
+        GlitchMembers = []
+        for s in GlitchItems:
+            GlitchMembers.append(GlitchGroup + s)
+        GlitchDict[GlitchGroup] = GlitchMembers
+    
+    GlitchDict[GlitchGroup] = GlitchMembers
 
-def ObjectCreateNameGlitchMaterial(Stub, Centre, Spin, Dims):
+
+def PlaceCreateGlitch(Stub, Centre, Spin, Dims):
+    
+    
+    
     MatchingStub = False
     MatchingList = []
     StubGroup = []
+    
+    if Stub+'a' in list(GlitchDict.keys()):
+        for PuzzlePiece in GroupSuffixes:
+            for g in range(len(GlitchItems)):
+                NewName = Stub + PuzzlePiece + GlitchItems[g]
+                #print('NewName for item', NewName)
+                for c in range(len(Centre)):
+                    Centre[c] = Centre[c] + Offsets[g]
+                    Spin[c] = Spin[c] + Offsets[g]
+                    Dims[c] = Dims[c] + Offsets[g]                     
+                
+                if Stub[:1] == 'B':
+                    bpy.ops.mesh.primitive_cube_add( location = (Centre[0], Centre[1], Centre[2]), rotation = (Spin[0], Spin[1], Spin[2]), scale = (Dims[0], Dims[1], Dims[2]) )
+                    bpy.context.active_object.name = NewName
+                    bpy.context.active_object.data.name = NewName
+                    #StubGroup += [GlitchNewName] # done in dictionary earlier
+                    bpy.data.objects[NewName].active_material = acrylicBpyMat
+                    
+                if Stub[:1] == 'S':
+                    bpy.ops.mesh.primitive_uv_sphere_add(segments = 128, ring_count = 64, radius = 0.01 + Dims[0], location = (Centre[0], Centre[1], Centre[2]) )
+                    bpy.context.active_object.name = NewName
+                    bpy.context.active_object.data.name = NewName                            
+                ### treat spheres differently, there are not six of them            
+                    
+        
+        #SixBlocks = list(GlitchDict.keys)
+        #for Base
+        
+    
+    ''' old method without GlitchGroups
     
     for item in bpy.context.scene.objects:
         if item.name[:4] == Stub:
@@ -30,15 +76,15 @@ def ObjectCreateNameGlitchMaterial(Stub, Centre, Spin, Dims):
             MatchingList.append(item.name)
         if MatchingStub:
             LastLetterOfLastMatch = MatchingList[-1:][-1][-1]  # last list item, last item, last letter 
-            AlphabetPosition = SuffixList.index(LastLetterOfLastMatch)
-            NextSuffix = SuffixList[AlphabetPosition + 1]
+            AlphabetPosition = GroupSuffixes.index(LastLetterOfLastMatch)
+            NextSuffix = GroupSuffixes[AlphabetPosition + 1]
             NewName = Stub + NextSuffix
         else:
             NewName = Stub + 'a'
             
     if Stub[:1] == 'B':
-        for g in range(len(GlitchSuffixes)):
-            GlitchNewName = NewName + GlitchSuffixes[g]
+        for g in range(len(GlitchBlocks)):
+            GlitchNewName = NewName + GlitchBlocks[g]
             for c in range(len(Centre)):
                 Centre[c] = Centre[c] + Offsets[g]
                 Spin[c] = Spin[c] + Offsets[g]
@@ -51,8 +97,8 @@ def ObjectCreateNameGlitchMaterial(Stub, Centre, Spin, Dims):
             bpy.data.objects[GlitchNewName].active_material = acrylicBpyMat
     
     if Stub[:1] == 'S':
-        for g in range(len(GlitchSuffixes)):
-            GlitchNewName = NewName + GlitchSuffixes[g]
+        for g in range(len(GlitchBlocks)):
+            GlitchNewName = NewName + GlitchBlocks[g]
             for c in range(len(Centre)):
                 Centre[c] = Centre[c] + Offsets[g]
                 Dims[c] = Dims[c] + Offsets[g]
@@ -65,11 +111,11 @@ def ObjectCreateNameGlitchMaterial(Stub, Centre, Spin, Dims):
                 bpy.data.objects[GlitchNewName].active_material = SphereSteel
             else:
                 bpy.data.objects[GlitchNewName].active_material = acrylicBpyMat  
-                # glitched spheres are acrylic
+                # glitched spheres are acrylic'''
                 
     return(StubGroup)
 
-
+# matrix operations to aid solving with Python later
 def RotateBlocksAboutSpheres(BCoords, BDims, NameRootAppend):
     print('fn RotateBlocksAboutSpheres BCoords, BDims, NameRootAppend:  ', BCoords, BDims, NameRootAppend)
     bpy.ops.mesh.primitive_cube_add(location = (BCoords[0], BCoords[1], BCoords[2]), rotation = (0, 0, 0), scale = (BDims))
@@ -89,7 +135,7 @@ def RotateBlocksAboutSpheres(BCoords, BDims, NameRootAppend):
     # (Pi/2, 0, Pi/2) for 'c' <-> np.rot90(..., axes = (0, 1)); np.rot90(..., axes = (2, 0)) in fn RotateReflectMatrix
     # and BDims aka NewBlockXYZ 
 
-
+# more matrix operations to aid solving with Python later
 def CheckEmptiesForBlock(CornerCell):
     print('CornerCell occupies matrix position:',  CornerCell)
     EmptySpace = True
@@ -119,9 +165,9 @@ def CheckEmptiesForBlock(CornerCell):
     print('NewBlockXYZ C of M position:', BlockCofMList)
     return(EmptySpace, BlockCofMList, NewBlockXYZ)
 
-
+# yet more matrix operations to aid solving with Python later
 def RotateReflectMatrix(MatrixA):
-    for shape in BlockNames:
+    for shape in BlockRoots:
         semiMatrixB = np.rot90(MatrixA, axes = (0, 2))   # rotates B321a (flat along x-axis) to B321b (vertical, z)
         MatrixB = np.rot90(semiMatrixB, axes = (1, 0))
         for mx in range(mD):
@@ -145,13 +191,13 @@ def RotateReflectMatrix(MatrixA):
             for mz in range(mD):
                 if FormerMatrix[mx][my][mz][:1] == 'S':
                     FinalMatrix[mx][my][mz] = FormerMatrix[mx][my][mz]
-                if MatrixA[mx][my][mz][:4] in BlockNames:
+                if MatrixA[mx][my][mz][:4] in BlockRoots:
                     FinalMatrix[mx][my][mz] = MatrixA[mx][my][mz]
                     FinalMatrix[rD - mx][rD - my][rD - mz] = MatrixA[mx][my][mz][:5] + 'd'
-                if MatrixB[mx][my][mz][:4] in BlockNames:
+                if MatrixB[mx][my][mz][:4] in BlockRoots:
                     FinalMatrix[mx][my][mz] = MatrixB[mx][my][mz]
                     FinalMatrix[rD - mx][rD - my][rD - mz] = MatrixB[mx][my][mz][:5] + 'e'
-                if MatrixC[mx][my][mz][:4] in BlockNames:
+                if MatrixC[mx][my][mz][:4] in BlockRoots:
                     FinalMatrix[mx][my][mz] = MatrixC[mx][my][mz]
                     FinalMatrix[rD - mx][rD - my][rD - mz] = MatrixC[mx][my][mz][:5] + 'f'                    
 
@@ -226,7 +272,7 @@ input = acrylicNodes['Material Output'].inputs['Surface']
 output = acrylicNodes['Glass BSDF'].outputs['BSDF']
 acrylicShaderLinks.new(input, output)
 
-# increase light ray bounces for transparent acrylic
+# increase light ray bounces because scene contains transparent acrylic
 scene = bpy.context.scene
 scene.render.engine = 'CYCLES'
 scene.cycles.transparent_max_bounces = 20
@@ -236,12 +282,17 @@ scene.cycles.volume_bounces = 8
 
 # define names of components, create matrix
 Pi = math.pi
-SuffixList = ['a', 'b', 'c', 'd', 'e', 'f']
-GlitchSuffixes = ['v', 'w', 'x', 'y', 'z']; Offsets = [0, -0.002, -0.001, 0.001, 0.002]  # 'v' has no offset
-BlockNames = ['B321']; BaseSphereName = ['S111']
+GroupSuffixes = ['a', 'b', 'c', 'd', 'e', 'f']
+SphereSuffixes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']  # yup, nine
+GlitchItems = ['v', 'w', 'x', 'y', 'z']
+Offsets = [-0.002, -0.001, 0, 0.001, 0.002]
+GlitchDict = {}
+BlockRoots = ['B321']; BaseSphere = ['S111']; PuzzlePieces = BlockRoots + BaseSphere
 AddedCam = ['LowCamera']
-ActiveItems = BlockNames + BaseSphereName + AddedCam
+ActiveItems = PuzzlePieces + AddedCam
 mx = 0;  my = 0;  mz = 0; mD = 4; BScale = 10         # prefix m for matrix which is later scaled *BScale, the diameter of a sphere & length of a cube
+SphereSuffixes = SphereSuffixes[:mD]          # sphere quantity matched to matrix size 
+
 CubeD = mD * BScale
 Matrix3D = [[['.' for mx in range(mD)] for my in range(mD)] for mz in range(mD)]
 print('mx, my, mz, mD values: ', mx, my, mz, mD)
@@ -258,14 +309,26 @@ for o in bpy.data.objects:
         except ReferenceError as e:
             print(e)
 
+      
+for form in PuzzlePieces:
+    if form[0] == 'B':
+        AddGlitchVersions(form, GroupSuffixes)
+    else:
+        AddGlitchVersions(form, SphereSuffixes)        
 
-# ObjectCreateNameGlitchMaterial(Stub, Centre, Spin, Dims)
-DimsFromBlockName = [ BScale*int(BlockNames[0][1:2]), BScale*int(BlockNames[0][2:3]), BScale*int(BlockNames[0][3:4]) ]
-ObjectCreateNameGlitchMaterial(BlockNames[0], [0, 0, 40], [0, 0, 0], DimsFromBlockName)
+
+        
+print('Check GlitchDict:', GlitchDict)
+print('Check first GlitchDict key:', list(GlitchDict.keys())[0])
+print('First GlitchDict value:', GlitchDict['B321a'])
+
+# PlaceCreateGlitch(Stub, Centre, Spin, Dims)
+DimsFromBlockName = [ BScale*int(BlockRoots[0][1:2]), BScale*int(BlockRoots[0][2:3]), BScale*int(BlockRoots[0][3:4]) ]
+PlaceCreateGlitch(BlockRoots[0], [0, 0, 40], [0, 0, 0], DimsFromBlockName)
 
 
 ''' # now get adding blocks with simple motion
-for EachBlock in BlockNames:
+for EachBlock in BlockRoots:
     MBlockXYZ = [ int(EachBlock[1:2]), int(EachBlock[2:3]), int(EachBlock[3:4]) ]
     NewBlockXYZ = [MBlockXYZ[0]*BScale, MBlockXYZ[1]*BScale, MBlockXYZ[2]*BScale]
     BDims = NewBlockXYZ
@@ -294,7 +357,7 @@ bpy.context.active_object.data.name = 'LowCamera'
 bpy.context.scene.camera = bpy.data.objects['LowCamera']
 
 
-# basic motion
+'''# basic motion
 
 Frame = 1
 
@@ -312,7 +375,7 @@ Frame = 120
 bpy.context.scene.frame_set(Frame)
 ItemInfo.location = (-3, 0, 100)
 ItemInfo.keyframe_insert(data_path = "location",index = -1)
-print('ItemInfo after move:', ItemInfo.location)
+print('ItemInfo after move:', ItemInfo.location)'''
 
 
 
@@ -324,14 +387,3 @@ print('ItemInfo after move:', ItemInfo.location)
 
 
 
-'''example of dealing with errors:
-    >>> for cube in cubes:
-...     try:
-...         cube, cube.location
-...         
-...     except ReferenceError as e:
-...         e
-...         
-
-Caught Reference Errors are printed as 
-ReferenceError('blah')'''

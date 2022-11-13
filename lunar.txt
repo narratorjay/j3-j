@@ -18,8 +18,8 @@ for Building in BaseBuildings.objects:
     bpy.data.objects.remove(Building, do_unlink=True)
 bpy.data.collections.remove(BaseBuildings) '''
 
-# create glitch object collection dictionary
-def AddGlitchVersions(form, ShapeSuffixes):
+
+def NameGlitchVersions(form, ShapeSuffixes):   # dictionary of glitch objects
     print('form:', form, '  ShapeSuffixes:', ShapeSuffixes)
     for group in ShapeSuffixes:
         GlitchGroup = form + group
@@ -28,19 +28,15 @@ def AddGlitchVersions(form, ShapeSuffixes):
         for s in GlitchItems:
             GlitchMembers.append(GlitchGroup + s)
         GlitchDict[GlitchGroup] = GlitchMembers
-    
-    GlitchDict[GlitchGroup] = GlitchMembers
 
 
-def PlaceCreateGlitch(Stub, Centre, Spin, Dims):
+def PlaceCreateGlitch(BasePiece, Centre, Spin, Dims):
+    for EachGlitch in GlitchDict[BasePiece]:
+        print('BasePiece key:', BasePiece, 'with GlitcDict value:', EachGlitch)
+        
+            
     
-    
-    
-    MatchingStub = False
-    MatchingList = []
-    StubGroup = []
-    
-    if Stub+'a' in list(GlitchDict.keys()):
+    '''if Stub+'a' in list(GlitchDict.keys()):
         for PuzzlePiece in GroupSuffixes:
             for g in range(len(GlitchItems)):
                 NewName = Stub + PuzzlePiece + GlitchItems[g]
@@ -62,58 +58,7 @@ def PlaceCreateGlitch(Stub, Centre, Spin, Dims):
                     bpy.context.active_object.name = NewName
                     bpy.context.active_object.data.name = NewName                            
                 ### treat spheres differently, there are not six of them            
-                    
-        
-        #SixBlocks = list(GlitchDict.keys)
-        #for Base
-        
-    
-    ''' old method without GlitchGroups
-    
-    for item in bpy.context.scene.objects:
-        if item.name[:4] == Stub:
-            MatchingStub = True
-            MatchingList.append(item.name)
-        if MatchingStub:
-            LastLetterOfLastMatch = MatchingList[-1:][-1][-1]  # last list item, last item, last letter 
-            AlphabetPosition = GroupSuffixes.index(LastLetterOfLastMatch)
-            NextSuffix = GroupSuffixes[AlphabetPosition + 1]
-            NewName = Stub + NextSuffix
-        else:
-            NewName = Stub + 'a'
-            
-    if Stub[:1] == 'B':
-        for g in range(len(GlitchBlocks)):
-            GlitchNewName = NewName + GlitchBlocks[g]
-            for c in range(len(Centre)):
-                Centre[c] = Centre[c] + Offsets[g]
-                Spin[c] = Spin[c] + Offsets[g]
-                Dims[c] = Dims[c] + Offsets[g]   
-            
-            bpy.ops.mesh.primitive_cube_add( location = (Centre[0], Centre[1], Centre[2]), rotation = (Spin[0], Spin[1], Spin[2]), scale = (Dims[0], Dims[1], Dims[2]) )
-            bpy.context.active_object.name = GlitchNewName
-            bpy.context.active_object.data.name = GlitchNewName
-            StubGroup += [GlitchNewName]
-            bpy.data.objects[GlitchNewName].active_material = acrylicBpyMat
-    
-    if Stub[:1] == 'S':
-        for g in range(len(GlitchBlocks)):
-            GlitchNewName = NewName + GlitchBlocks[g]
-            for c in range(len(Centre)):
-                Centre[c] = Centre[c] + Offsets[g]
-                Dims[c] = Dims[c] + Offsets[g]
-                
-            bpy.ops.mesh.primitive_uv_sphere_add(segments = 128, ring_count = 64, radius = 0.01 + Dims[0], location = (Centre[0], Centre[1], Centre[2]) )    
-            bpy.context.active_object.name = GlitchNewName
-            bpy.context.active_object.data.name = GlitchNewName
-            StubGroup += [GlitchNewName]
-            if GlitchNewName[5:] == 'v':
-                bpy.data.objects[GlitchNewName].active_material = SphereSteel
-            else:
-                bpy.data.objects[GlitchNewName].active_material = acrylicBpyMat  
-                # glitched spheres are acrylic'''
-                
-    return(StubGroup)
+'''
 
 # matrix operations to aid solving with Python later
 def RotateBlocksAboutSpheres(BCoords, BDims, NameRootAppend):
@@ -312,19 +257,24 @@ for o in bpy.data.objects:
       
 for form in PuzzlePieces:
     if form[0] == 'B':
-        AddGlitchVersions(form, GroupSuffixes)
+        NameGlitchVersions(form, GroupSuffixes)
     else:
-        AddGlitchVersions(form, SphereSuffixes)        
+        NameGlitchVersions(form, SphereSuffixes)        
 
 
         
-print('Check GlitchDict:', GlitchDict)
-print('Check first GlitchDict key:', list(GlitchDict.keys())[0])
+print('Checking GlitchDict:', GlitchDict)
+print('Check second GlitchDict key:', list(GlitchDict.keys())[1])
+print('PuzzlePieces:', PuzzlePieces)
+
 print('First GlitchDict value:', GlitchDict['B321a'])
 
-# PlaceCreateGlitch(Stub, Centre, Spin, Dims)
-DimsFromBlockName = [ BScale*int(BlockRoots[0][1:2]), BScale*int(BlockRoots[0][2:3]), BScale*int(BlockRoots[0][3:4]) ]
-PlaceCreateGlitch(BlockRoots[0], [0, 0, 40], [0, 0, 0], DimsFromBlockName)
+PiecesList = list(GlitchDict.keys())
+print('PiecesList:', PiecesList)
+
+for Piece in PiecesList:
+    DimsFromName = [ BScale*int(Piece[1:2]), BScale*int(Piece[2:3]), BScale*int(Piece[3:4]) ]
+    PlaceCreateGlitch(Piece, [0, 0, 40], [0, 0, 0], DimsFromName)
 
 
 ''' # now get adding blocks with simple motion

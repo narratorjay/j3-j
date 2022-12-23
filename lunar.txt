@@ -29,10 +29,11 @@ def NameGlitchVersions(form, ShapeSuffixes):   # dictionary of glitch objects
 
 def PlaceCreateGlitch(BasePiece, Centre, Spin, Dims):
     for EachGlitch in GlitchDict[BasePiece]:
-        #print('BasePiece key:', BasePiece, 'with GlitcDict value:', EachGlitch)
+        print('BasePiece key:', BasePiece, 'with GlitcDict value:', EachGlitch)
         for g in range(len(Offsets)):    
             for c in range(len(Centre)):
-                Centre[c] = Centre[c] + Offsets[g]
+                Centre[c] = Centre[c] + 5*Offsets[g] # was Centre[c] = Centre[c] + Offsets[g]
+                print('Centre location x/y/z is', Centre[c])
                 Spin[c] = Spin[c] + Offsets[g]
                 Dims[c] = Dims[c] + Offsets[g]
 
@@ -141,7 +142,7 @@ def RotateReflectMatrix(MatrixA):
 
     print('FinalMatrix is', FinalMatrix)
 
-
+# for scout craft
 def AlignCamLights(NewPosAngle, FrameCount, Tracking, TrackTarget):
     scene.frame_set(FrameCount)
     print('NewPosAngle components are', NewPosAngle, 'FrameCount', FrameCount)
@@ -219,9 +220,9 @@ scene.cycles.volume_bounces = 8
 # define names of components, create matrix
 Pi = math.pi
 GroupSuffixes = ['a', 'b', 'c', 'd', 'e', 'f']
-SphereSuffixes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']  # yup, nine+
-GlitchItems = ['v', 'w', 'x', 'y', 'z']
-Offsets = [-0.002, -0.001, 0, 0.001, 0.002]
+SphereSuffixes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']  # yup, nine
+GlitchItems = ['v', 'w']            # was ['v', 'w', 'x', 'y', 'z']
+Offsets = [-2, -1, 0, 1, 2] # was [-0.002, -0.001, 0, 0.001, 0.002], all black, and [-0.2, -0.1, 0, 0.1, 0.2], also black
 GlitchDict = {}
 BlockRoots = ['B321']; BaseSphere = ['S111']; PuzzlePieces = BlockRoots + BaseSphere
 AddedCam = ['LowCamera']
@@ -265,7 +266,8 @@ for Piece in PiecesList:
     print('Piece', Piece, 'sent to PlaceCreateGlitch.  Piece[:1] is', Piece[:1])
     if Piece[:1] == 'B':
         DimsFromName = [ BScale*int(Piece[1:2]), BScale*int(Piece[2:3]), BScale*int(Piece[3:4]) ]
-        PlaceCreateGlitch(Piece, [0, 0, 40], [0, 0, 0], DimsFromName)
+        # was PlaceCreateGlitch(Piece, [0, 0, 40], [0, 0, 0], DimsFromName)
+        PlaceCreateGlitch(Piece, [0, 0, 43], [0, 0, 0], DimsFromName)   # was (Piece, [0, 0, 43], [0, 0, 0], DimsFromName)
     else:
         DimsFromName = [BScale, BScale, BScale]
         print('Sphere DimsFromName:', DimsFromName)
@@ -311,21 +313,23 @@ print('ItemInfo before move:', ItemInfo.location)
 '''
 ItemName = PiecesList[0]
 for EachGlitch in GlitchDict[ItemName]:
-    print('EachGlitch values is:', EachGlitch)
-    ItemInfo = bpy.data.objects[EachGlitch]
-    bpy.context.scene.frame_set(Frame)
-    ItemInfo.keyframe_insert(data_path = "location",index = -1)
-    print('ItemInfo before move:', ItemInfo.location)
+    print('EachGlitch value is:', EachGlitch)
+    if EachGlitch == 'B321av':   # new line to test single block
+        ItemInfo = bpy.data.objects[EachGlitch]
+        bpy.context.scene.frame_set(Frame)
+        ItemInfo.keyframe_insert(data_path = "location",index = -1)
+        print('ItemInfo before move:', ItemInfo.location)
 
 
-Frame = 120
+Frame = 30    # was 120
 for EachGlitch in GlitchDict[ItemName]:
-    print('EachGlitch values is:', EachGlitch)
-    ItemInfo = bpy.data.objects[EachGlitch]
-    bpy.context.scene.frame_set(Frame)
-    ItemInfo.location = (-3, 0, 100)
-    ItemInfo.keyframe_insert(data_path = "location",index = -1)
-    print('ItemInfo after move:', ItemInfo.location)
+    print('EachGlitch value is:', EachGlitch)
+    if EachGlitch == 'B321av':   # new line to test single block
+        ItemInfo = bpy.data.objects[EachGlitch]
+        bpy.context.scene.frame_set(Frame)
+        ItemInfo.location = (-3, 0, 100)
+        ItemInfo.keyframe_insert(data_path = "location",index = -1)
+        print('ItemInfo after move:', ItemInfo.location)
 
 '''
 #ItemInfo = bpy.data.objects(ItemName)

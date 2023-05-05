@@ -1,9 +1,6 @@
-''' This code is backed up on GitHub using lunar.txt, 
-do not try to save .blend files there
+''' This code is backed up on GitHub using lunar.txt, do not try to save .blend files there
 
-Removed nine items (cylinders,blocks and an icosphere) 
-comprising a lunar base in the original landscape from TurboSquid
-with this code:
+Removed nine items (cylinders,blocks and an icosphere) comprising a lunar base in the original landscape from TurboSquid with this code:
  
 BaseBuildings = bpy.data.collections.get('base') 
 for Building in BaseBuildings.objects:
@@ -16,6 +13,8 @@ import numpy as np
 import os
 import csv
 import math
+import random
+
 
 def NameGlitchVersions(form, ShapeSuffixes):   # dictionary of glitch objects
     print('form:', form, '  ShapeSuffixes:', ShapeSuffixes)
@@ -29,22 +28,19 @@ def NameGlitchVersions(form, ShapeSuffixes):   # dictionary of glitch objects
 
 def PlaceCreateGlitch(BasePiece, Centre, Spin, Dims):
     for EachGlitch in GlitchDict[BasePiece]:
-        print('BasePiece key:', BasePiece, 'with GlitcDict value:', EachGlitch)
-        for g in range(len(Offsets)):    
-            for c in range(len(Centre)):
-                Centre[c] = Centre[c] + 5*Offsets[g] # was Centre[c] = Centre[c] + Offsets[g]
-                print('Centre location x/y/z is', Centre[c])
-                Spin[c] = Spin[c] + Offsets[g]
-                Dims[c] = Dims[c] + Offsets[g]
-
+        # print('BasePiece key:', BasePiece, 'with GlitcDict value:', EachGlitch)
+        for c in range(len(Centre)):
+            Centre[c] = Centre[c] + random.choice(Offsets)
+            Spin[c] = Spin[c] + random.choice(Offsets) * 0.02
+            Dims[c] = Dims[c] + random.choice(Offsets)
         if BasePiece[:1] == 'B':
             bpy.ops.mesh.primitive_cube_add( location = (Centre[0], Centre[1], Centre[2]), rotation = (Spin[0], Spin[1], Spin[2]), scale = (Dims[0], Dims[1], Dims[2]) )
             bpy.context.active_object.name = EachGlitch
             bpy.context.active_object.data.name = EachGlitch
             bpy.data.objects[EachGlitch].active_material = acrylicBpyMat
-            print('Dims for block in fn PlaceCreateGlitch:', Dims, 'for glitched Block', EachGlitch)
+            # print('Dims for block in fn PlaceCreateGlitch:', Dims, 'for glitched Block', EachGlitch)
         if BasePiece[:1] == 'S':
-            print('Dims for sphere in fn PlaceCreateGlitch:', Dims, 'for glitched sphere', EachGlitch)
+            # print('Dims for sphere in fn PlaceCreateGlitch:', Dims, 'for glitched sphere', EachGlitch)
             bpy.ops.mesh.primitive_uv_sphere_add(segments = 128, ring_count = 64, radius = Dims[0], location = (Centre[0], Centre[1], Centre[2]) )
             bpy.context.active_object.name = EachGlitch
             bpy.context.active_object.data.name = EachGlitch
@@ -114,6 +110,7 @@ def RotateReflectMatrix(MatrixA):
                 for mz in range(mD):
                     if MatrixB[mx][my][mz][0:4] == shape:
                         MatrixB[mx][my][mz] = shape + 'b'
+        print('MatrixA', MatrixA) #, 'semiMatrixB', semiMatrixB, 'MatrixB', MatrixB)
                          
         semiMatrixC = np.rot90(MatrixA, axes = (0, 1))   # rotates B321a (as above) to B321c (set on edge, aligned along y)
         MatrixC = np.rot90(semiMatrixC, axes = (2, 0))
@@ -123,6 +120,8 @@ def RotateReflectMatrix(MatrixA):
                     if MatrixC[mx][my][mz][0:4] == shape:
                         MatrixC[mx][my][mz] = shape + 'c'
     
+    FormerMatrix = MatrixC  # was FinalMatrix = FormerMatrix  # single line
+    print('FormerMatrix is', FormerMatrix) 
     FinalMatrix = FormerMatrix
     rD = mD - 1       # range dimension, rD, is one less than mD, matrix dimension
     for mx in range(mD):
@@ -217,12 +216,17 @@ scene.cycles.transmission_max_bounces = 20
 scene.cycles.diffusion_bounces = 20
 scene.cycles.volume_bounces = 8
 
-# define names of components, create matrix
+
+   
+
+
+# define names of components and their attributes, create matrix for maths overview
 Pi = math.pi
 GroupSuffixes = ['a', 'b', 'c', 'd', 'e', 'f']
 SphereSuffixes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']  # yup, nine
-GlitchItems = ['v', 'w']            # was ['v', 'w', 'x', 'y', 'z']
-Offsets = [-2, -1, 0, 1, 2] # was [-0.002, -0.001, 0, 0.001, 0.002], all black, and [-0.2, -0.1, 0, 0.1, 0.2], also black
+GlitchItems = ['v', 'w', 'x', 'y', 'z']            # was ['v', 'w', 'x']
+Offsets =  [-2, -1, 0, 1, 2, -2.1, -1.1, 0.1, 1.1, 2.1, -2.2, -1.2, -0.1, 1.2, 2.2, -1.9, -0.9, 0, 0.9, 1.9, -5, -1, 0, 1, 5] 
+# was Offsets = [-2, -1, 0, 1, 2] 
 GlitchDict = {}
 BlockRoots = ['B321']; BaseSphere = ['S111']; PuzzlePieces = BlockRoots + BaseSphere
 AddedCam = ['LowCamera']
@@ -230,27 +234,62 @@ ActiveItems = PuzzlePieces + AddedCam
 mx = 0;  my = 0;  mz = 0; mD = 4; BScale = 10         # prefix m for matrix which is later scaled *BScale, the diameter of a sphere & length of a cube
 SphereSuffixes = SphereSuffixes[:mD]          # sphere quantity matched to matrix size 
 
-CubeD = mD * BScale
-Matrix3D = [[['.' for mx in range(mD)] for my in range(mD)] for mz in range(mD)]
-print('mx, my, mz, mD values: ', mx, my, mz, mD)
-
-# clear scene of script item debris 
+# clear scene of script item debris
 for o in bpy.data.objects:
-    print('Object:', o)
+    #print('Object:', o)
     for i in ActiveItems:
+        #if o.name[:4] == i[:4]:
+        #    print('Deleting', o.name)
+
         try:
             if o.name[:4] == i[:4]:
-                print('Deleting', o.name)
+                print('Deleting', o.name, end="")
                 o.user_clear
                 bpy.data.objects.remove(o)
         except ReferenceError as e:
-            print(e)
-      
+            print(e, end="") 
+            # it always produced StructRNA of type Object has been removed
+
+print()
+print()         
+print('Deleted unwanted items')
+            
 for form in PuzzlePieces:
     if form[0] == 'B':
         NameGlitchVersions(form, GroupSuffixes)
     else:
-        NameGlitchVersions(form, SphereSuffixes)        
+        NameGlitchVersions(form, SphereSuffixes)  
+
+# create empty matrix
+CubeD = mD * BScale
+Matrix3D = [[['.' for mx in range(mD)] for my in range(mD)] for mz in range(mD)]
+print('mx, my, mz, mD values: ', mx, my, mz, mD)
+
+# place first block item in matrix, this can be removed
+FirstBlockXDim = int(BlockRoots[0][1])
+for m in range(1, (1 + FirstBlockXDim)):
+    print(m)
+
+#'''
+#this is to do with merging an empty matrix with 
+BlockA = BlockRoots[0] + 'a'
+# was MatrixA = [ [ [BlockA for mx in range(1, (1 + int(BlockRoots[0][1]))) ] for my in range(int(BlockRoots[0][2])) ] for mz in range(int(BlockRoots[0][3])) ]
+# MatrixA = [ [ [ BlockA for mx in range(1, (1 + int(BlockRoots[0][1]))) ] for my in range(int(BlockRoots[0][2])) ] for mz in range(int(BlockRoots[0][3])) ]
+# print('MatrixA) is', MatrixA)
+#'''
+
+# fake it ### the third dimension should not be counted so this next line only deals with two dimensions
+MatrixA = [['.', 'B321a', 'B321a', 'B321a'], ['.', 'B321a', 'B321a', 'B321a'], ['.', '.', '.', '.'], ['.', '.', '.', '.']] 
+
+Matrix3D[0] = MatrixA
+print('Matrix3D after adding MatrixA', '\n', Matrix3D)
+''' this almost works:
+
+'''
+RotateReflectMatrix(Matrix3D)
+
+
+# clear scene of script item debris  # was here   
 
 
         
@@ -267,7 +306,7 @@ for Piece in PiecesList:
     if Piece[:1] == 'B':
         DimsFromName = [ BScale*int(Piece[1:2]), BScale*int(Piece[2:3]), BScale*int(Piece[3:4]) ]
         # was PlaceCreateGlitch(Piece, [0, 0, 40], [0, 0, 0], DimsFromName)
-        PlaceCreateGlitch(Piece, [0, 0, 43], [0, 0, 0], DimsFromName)   # was (Piece, [0, 0, 43], [0, 0, 0], DimsFromName)
+        PlaceCreateGlitch(Piece, [0, 0, 30], [0, 0, 0], DimsFromName)   # was (Piece, [0, 0, 43], [0, 0, 0], DimsFromName)
     else:
         DimsFromName = [BScale, BScale, BScale]
         print('Sphere DimsFromName:', DimsFromName)
@@ -311,25 +350,31 @@ bpy.context.scene.frame_set(Frame)
 ItemInfo.keyframe_insert(data_path = "location",index = -1)
 print('ItemInfo before move:', ItemInfo.location)
 '''
-ItemName = PiecesList[0]
-for EachGlitch in GlitchDict[ItemName]:
-    print('EachGlitch value is:', EachGlitch)
-    if EachGlitch == 'B321av':   # new line to test single block
-        ItemInfo = bpy.data.objects[EachGlitch]
+
+TestPieces = PiecesList[:1]
+#for EachGlitch in GlitchDict[ItemName]:
+#    print('EachGlitch value is:', EachGlitch)
+#    if EachGlitch in TestList: # if EachGlitch == 'B321av':   # new line to test single block
+GlitchList = GlitchDict['B321a']   # was = GlitchDict[TestPieces]
+for g in GlitchList:
+        ItemInfo = bpy.data.objects[g]
         bpy.context.scene.frame_set(Frame)
         ItemInfo.keyframe_insert(data_path = "location",index = -1)
         print('ItemInfo before move:', ItemInfo.location)
 
 
 Frame = 30    # was 120
-for EachGlitch in GlitchDict[ItemName]:
-    print('EachGlitch value is:', EachGlitch)
-    if EachGlitch == 'B321av':   # new line to test single block
-        ItemInfo = bpy.data.objects[EachGlitch]
+#for EachGlitch in GlitchDict[ItemName]:
+#    print('EachGlitch value is:', EachGlitch)
+#    if EachGlitch in TestList: # if EachGlitch == 'B321av':   # new line to test single block
+for i, v in enumerate(GlitchList):
+        ItemInfo = bpy.data.objects[v]
         bpy.context.scene.frame_set(Frame)
-        ItemInfo.location = (-3, 0, 100)
+        #ItemInfo.location = (-3 + Offsets[i], 0 - Offsets[i], 100 + Offsets[i])
+        ItemInfo.location = (-3 + random.choice(Offsets), 0 - random.choice(Offsets), 100 + random.choice(Offsets))
+        ItemInfo.rotation_euler = (random.choice(Offsets) * 0.03, -(random.choice(Offsets) * 0.02), random.choice(Offsets) * 0.025)
         ItemInfo.keyframe_insert(data_path = "location",index = -1)
-        print('ItemInfo after move:', ItemInfo.location)
+        print('ItemInfo name', ItemInfo.name, ',  location:', ItemInfo.location, ',   rotation:', ItemInfo.rotation_euler)
 
 '''
 #ItemInfo = bpy.data.objects(ItemName)
